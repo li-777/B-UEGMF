@@ -1,0 +1,56 @@
+structure:
+  diff_name: "ema_cifar10" # Diff name
+  clf_log: "cifar10" # Classifier model path
+  dataset: "CIFAR10-Un" # Dataset, in [ CIFAR10, CIFAR10-Un]
+  bsize: 500 # Batch size
+  start_epoch: 0
+  end_epoch: 99
+  run_samples: 10000
+
+attack:
+  if_targeted: false    # false无目标攻击
+  attack_method: "clf_pgd" # Attack method: list [clf_pgd, bpda, spsa]  所用的攻击方法 "clf_pgd"：分类任务中的 投影梯度下降
+  ptb: 8. # perturbation, pixel scale   扰动范围，即对抗样本允许的像素扰动大小,像素级
+  ball_dim: -1 # -1 or 1 or 2     定义对抗扰动的约束空间的范数类型。-1：表示未限制扰动的范数。1：使用 L1 范数。2：使用 L2 范数。L1 范数：限制扰动的绝对值和。L2 范数：限制扰动的欧几里得距离。L∞ 范数：限制每个像素的最大变化（通常用于 clf_pgd 攻击）
+  n_eot: 1 # Number of EOT, 1 if no EOT applied    EOT (Expectation over Transformations)，表示在攻击过程中使用随机数据增强（如噪声、平移、旋转等）的次数。如果 n_eot: 1，表示没有应用 EOT。如果 n_eot > 1，表示在生成对抗样本时对输入进行多次随机变换，并对梯度求均值，以增强攻击的通用性。
+  attack_lambda: 0.05 # adaptive attack step size strategy   自适应步长策略的系数。通常用于梯度攻击方法（如 PGD），以调整每次梯度更新的步长。较小的值（如 0.05）可能使攻击更加稳定，防止超出扰动范围。
+  attack_steps: 10 # Number of attack steps   攻击的最大优化步数。例如，在 PGD 攻击中，这表示对输入样本进行梯度更新的次数。增加此值可以提高攻击的成功率，但也会增加计算成本。
+  iter: 40 # Number of iterations for gradient-based attacks   攻击迭代次数，用于梯度攻击。在某些实现中，这可能等同于 attack_steps，也可能表示在整个训练过程中应用攻击的总轮数。
+
+runner: "Empirical_Multimodal_Un"
+
+purification:
+  purify_method: "diff_purify" # purification method in [diff_purify]
+  max_iter: 4 # Default maximum number of iterations   最大迭代次数，控制净化过程的迭代上限。
+  path_number: 1     # 定义净化过程中生成的路径或样本数量。
+  purify_step: 20    # 定义每次净化的步长或处理的更新步数。可能用于控制扩散模型的步数或优化步数。
+  purify_natural: True # Whether to purify natural images, for time complexity   是否对自然图像进行净化
+
+  cond: True # whether to use conditional ` guide    是否使用条件指导。条件指导通常基于标签信息、特定特征或模型输出的指导，帮助净化过程更准确地恢复目标图像。
+  condcc: True  # whether to use conditional 2 guide   是否使用第二种条件指导。这是另一个额外的指导信号，可能与 cond 搭配使用。
+
+  joincond: True # whether to use joint conditional guide    是否使用联合条件指导。如果为 True，可能同时结合多种条件指导信号，如 cond 和 condcc，以提高净化的精度。
+  join_mode: MSE_LPIPS  # Label_MSE/MSE_LPIPS   finall_mode  定义联合条件指导的模式。可选值：Label_MSE：基于标签的均方误差（MSE）作为指导信号。MSE_LPIPS：结合均方误差（MSE）和感知损失（LPIPS）。功能：MSE 更注重像素级的相似性。LPIPS 注重感知相似性（更接近人类视觉感知）。
+  guide_mode: MSE  #'LPIPS' or 'MSE'  
+  guide_mode2: LPIPS #'LPIPS' or 'MSE'
+
+  guide_scale: 70000   # 指导信号的权重或强度，影响指导信号对净化过程的影响程度。较大的值（如 70000）可能表明指导信号在优化目标中占据很大的权重
+  guide_scale_base: 0  # 基础指导信号的权重。可能用于与 guide_scale 结合，定义一个动态调整的权重策略
+
+  # 新增多模态配置
+  multimodal: true
+  text_purification:
+    trigger_detection: true
+    candidate_generation: 3  # 每个文本生成3个候选
+    cross_attention_weight: 0.3
+  
+  # 交叉注意力配置
+  cross_attention:
+    consistency_threshold: 0.8
+    attention_heads: 8
+    guide_strength: 0.5
+
+device:
+  diff_device: "cuda:0"
+  clf_device: "cuda:0"
+  rank: 0
